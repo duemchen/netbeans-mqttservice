@@ -17,6 +17,7 @@ import java.util.List;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Query;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 /**
@@ -134,6 +135,7 @@ public class Database {
                 pos.setData(zeile);
                 persist(pos);
             } catch (Exception e) {
+                System.out.println("ERROR ++++++++++++++++++++++++++++++++++++++++++++++++++++++");
                 System.out.println(e);
             }
 
@@ -164,4 +166,83 @@ public class Database {
         return ziel;
     }
 
+    public JSONObject getPositions(String mac) {
+
+        EntityManagerFactory emf = javax.persistence.Persistence.createEntityManagerFactory("xyz");
+        EntityManager em = emf.createEntityManager();
+        Query q = em.createQuery("select p from Position as p where p.ziel=:ZIEL");
+
+        Ziel ziel = macToZiel(mac);
+        q.setParameter("ZIEL", ziel);
+        List<Position> list = q.getResultList();
+        // Sonnenstand zu Zielstand darstellen. Müsste ja rein linear sein. Dazu die Sonnenformel
+        // 2 Diagramme: x, y
+        SunPos sp = new SunPos();
+        JSONArray jx = new JSONArray();
+        JSONArray jy = new JSONArray();
+        JSONArray jz = new JSONArray();
+        JSONArray ja = new JSONArray();
+
+        for (Position pos : list) {
+            Date d = pos.getDatum();
+            sp.printSonnenstand(d);
+            JSONObject jo = new JSONObject();
+            jo.put("X", sp.getAzimuth(d));
+            jo.put("x", pos.getX180());
+            jo.put("id", pos.getId());
+            jx.put(jo);
+            //
+            JSONObject joo = new JSONObject();
+            joo.put("Y", sp.getZenith(d));
+            joo.put("y", pos.getY() * -1);
+            jo.put("id", pos.getId());
+            jy.put(joo);
+
+            JSONObject jooo = new JSONObject();
+            jooo.put("X", sp.getAzimuth(d));
+            jooo.put("z", pos.getZ());
+            jooo.put("id", pos.getId());
+            jz.put(jooo);
+
+            JSONObject jaa = new JSONObject();
+            jaa.put("Y", sp.getZenith(d));
+            //jaa.put("a", -pos.getY() - Math.abs(pos.getZ()));
+            // Projektion auf die xz Ebene
+            double a = Math.asin(Math.sin(Math.toRadians(-pos.getY())) * Math.cos(Math.toRadians(Math.PI * pos.getZ())));
+            jaa.put("a", Math.toDegrees(a));
+            //jaa.put("id", pos.getId());
+            ja.put(jaa);
+
+            //TODO dateformat mit rein. Ziel: Punkt markieren und in den Kurven anzeigen
+            // Xx yY  Tagesverlauf XY
+        }
+
+        JSONObject j = new JSONObject();
+        j.put("x", jx);
+        j.put("y", jy);
+        j.put("z", jz);
+        j.put("a", ja);
+
+        System.out.println(j);
+
+        System.out.println("\n");
+        sp.printSonnenstand(HoraTime.strToDateTime("24.03.2017 12:00"));
+        sp.printSonnenstand(HoraTime.strToDateTime("25.03.2017 12:00")); //winterzeit
+        sp.printSonnenstand(HoraTime.strToDateTime("26.03.2017 13:00")); //sommerzeit
+        sp.printSonnenstand(HoraTime.strToDateTime("27.03.2017 13:00"));
+        System.out.println("\n");
+
+        sp.printSonnenstand(HoraTime.strToDateTime("24.03.2017 11:00"));
+        sp.printSonnenstand(HoraTime.strToDateTime("24.03.2017 12:00"));
+        sp.printSonnenstand(HoraTime.strToDateTime("24.03.2017 13:00"));
+        System.out.println("\n");
+        sp.printSonnenstand(HoraTime.strToDateTime("27.03.2017 11:00"));
+        sp.printSonnenstand(HoraTime.strToDateTime("27.03.2017 12:00"));
+        sp.printSonnenstand(HoraTime.strToDateTime("27.03.2017 13:00"));
+        sp.printSonnenstand(HoraTime.strToDateTime("27.03.2017 14:00"));
+        return j;
+    }
+
 }
+
+// 2017: 26.03.2017 02:00 bis 29.10.2017 03:00

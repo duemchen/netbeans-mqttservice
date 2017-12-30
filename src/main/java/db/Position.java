@@ -128,7 +128,17 @@ public class Position implements Serializable {
 
     @Override
     public String toString() {
-        return "db.Positions[ id=" + id + " ]";
+        return "db.Pos.[ id=" + id + " ]";
     }
 
+    public long getX180() {
+        long result = getX();
+        // 0 wird zu 180
+        result += 180;
+        if (result > 360) {
+            result -= 360;
+        }
+
+        return result * -1 + 360;
+    }
 }

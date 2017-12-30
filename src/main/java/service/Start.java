@@ -6,6 +6,7 @@
 package service;
 
 import java.util.Date;
+import org.json.JSONObject;
 
 /**
  *
@@ -23,6 +24,7 @@ public class Start {
         System.out.println("Start...");
         Database db = new Database();
         MqttConnector mq = new MqttConnector();
+        mq.subscibe("simago/system");
         mq.sendMqtt("simago/system", "Hallo Welt " + new Date());
         //
 
@@ -30,7 +32,9 @@ public class Start {
         db.fileToPositions("74-DA-38-3E-E8-3C.txt");
         db.fileToPositions("80-1F-02-ED-FD-A6.txt");
         //
-
+        String mac = "80-1F-02-ED-FD-A6";
+        JSONObject data = db.getPositions(mac);
+        mq.sendMqttPersist("simago/position/" + mac, data.toString());
         //
         System.out.println("DB erzeugt.\n\n");
     }
